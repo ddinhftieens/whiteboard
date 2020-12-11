@@ -1,0 +1,58 @@
+* {
+    box-sizing: border-box;
+}
+
+.whiteboard {
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: 0;
+    /* overflow: auto; */
+    /* cursor: url('../img/icons8-rounded-square-30.png'), auto; */
+}
+
+.colors {
+    position: fixed;
+    padding: 5px;
+    background-color: rgb(240, 239, 239);
+}
+
+.color {
+    display: inline-block;
+    height: 48px;
+    width: 48px;
+    margin-right: 5px;
+    margin-bottom: 2px;
+}
+
+.select{
+    margin-left: 10px;
+    width: 40px;
+    outline: none;
+    display: none;
+}
+
+.inputColorPicker{
+    margin-top: 10px;
+    /* background-image: url(../img/icons8-rounded-square-40.png); */
+    margin-bottom: 10px;
+    /* background-color: rgb(243, 199, 116); */
+}
+
+.inputFileName{
+    outline: none;
+    display: none;
+}
+
+.styleClass{
+    margin-bottom: 10px;
+}
+
+.color.black { background-color: black; }
+.color.red { background-color: red; }
+.color.green { background-color: green; }
+.color.blue { background-color: blue; }
+.color.yellow { background-color: yellow; }
