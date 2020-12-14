@@ -7,7 +7,8 @@ function Board() {
     const canvasRef = useRef(null);
     // const colorsRef = useRef(null);
     const socketRef = useRef();
-
+    const roomName = window.location.pathname.substr(1);
+    
     useEffect(() => {
         let colorPre = 'black';
         let lineWidth = 2;
@@ -137,7 +138,7 @@ function Board() {
         // ------------------------------- undo ---------------------------------------
         const undoFunc = (e) => {
             if (!erasering) {
-                socketRef.current.emit('undoCavas', 'undo');
+                socketRef.current.emit('undoCavas', {roomName: roomName});
                 // if(history.length > 1){
                 //     history.pop();
                 //     socketRef.current.emit('undoCavas', history[history.length - 1]);
@@ -146,9 +147,9 @@ function Board() {
         }
         document.getElementById("undo").addEventListener('click', undoFunc, false);
 
-        // ------------------------------- clearFile ---------------------------------------selectLineWidth
+        // ------------------------------- clearFile ---------------------------------------
         const clearFunc = (e) => {
-            socketRef.current.emit('clearCanvas', null);
+            socketRef.current.emit('clearCanvas', {roomName: roomName, data: null});
         }
         document.getElementById("clearFile").addEventListener('click', clearFunc, false);
 
@@ -201,7 +202,7 @@ function Board() {
                 var img = new Image();
                 img.onload = function () {
                     context.drawImage(img, current.x, current.y);
-                    socketRef.current.emit('clearCanvas', canvas.toDataURL());
+                    socketRef.current.emit('clearCanvas', {roomName: roomName, data: canvas.toDataURL()});
                 }
                 img.src = event.target.result;
             }
@@ -209,7 +210,8 @@ function Board() {
         document.getElementById("inputImage").addEventListener('change', selectImageFunc, false);
         // ------------------------------- create the draw ----------------------------
 
-        const draw = (x0, y0, x1, y1, color, lineWidth, type, emit) => {
+        const draw = (x0, y0, x1, y1, color, lineWidth, type, roomName, emit) => {
+            // console.log(roomName);
             context.beginPath();
             context.moveTo(x0, y0);
             context.lineTo(x1, y1);
@@ -233,12 +235,13 @@ function Board() {
                 y1: y1 / h,
                 color,
                 lineWidth,
-                type
+                type,
+                roomName
             });
         };
 
         // ------------------------------- create the fillRect ----------------------------
-        const drawRect = (x0, y0, width, height, color, lineWidth, type, emit) => {
+        const drawRect = (x0, y0, width, height, color, lineWidth, type, roomName, emit) => {
             context.beginPath();
             context.strokeStyle = color;
             context.lineWidth = lineWidth;
@@ -261,7 +264,8 @@ function Board() {
                 y1: height / h,
                 color,
                 lineWidth,
-                type
+                type,
+                roomName
             });
         };
 
@@ -290,17 +294,19 @@ function Board() {
                 y1: y1 / h,
                 color,
                 lineWidth,
-                type
+                type,
+                roomName
             });
         };
 
         // ------------------------------- create the fillCircle ----------------------------
 
-        const drawCircle = (x0, y0, width, height, color, lineWidth, type, emit) => {
+        const drawCircle = (x0, y0, x1, y1, color, lineWidth, type, emit) => {
+            let r = Math.sqrt(Math.pow(x1-x0, 2) + Math.pow(y1-y0, 2));
             context.beginPath();
             context.strokeStyle = color;
             context.lineWidth = lineWidth;
-            context.arc(x0, y0, width, 0, 2 * Math.PI);
+            context.arc(x0, y0, r, 0, 2 * Math.PI);
             context.stroke();
             context.closePath();
 
@@ -315,11 +321,12 @@ function Board() {
             socketRef.current.emit('drawing', {
                 x0: x0 / w,
                 y0: y0 / h,
-                x1: width / w,
-                y1: height / h,
+                x1: x1 / w,
+                y1: y1 / h,
                 color,
                 lineWidth,
-                type
+                type,
+                roomName
             });
         };
 
@@ -338,7 +345,7 @@ function Board() {
             if (e.clientX === 0 || e.clientY === 0) return;
             switch (current.type) {
                 case 0: {
-                    draw(current.x, current.y, e.clientX || e.touches[0].clientX, e.clientY || e.touches[0].clientY, current.color, current.lineWidth, current.type, true);
+                    draw(current.x, current.y, e.clientX || e.touches[0].clientX, e.clientY || e.touches[0].clientY, current.color, current.lineWidth, current.type, roomName, true);
                     current.x = e.clientX || e.touches[0].clientX;
                     current.y = e.clientY || e.touches[0].clientY;
                     break
@@ -360,26 +367,26 @@ function Board() {
             // draw(current.x, current.y, e.clientX || e.touches[0].clientX, e.clientY || e.touches[0].clientY, current.color, current.lineWidth, true);
             switch (current.type) {
                 case 0: {
-                    draw(current.x, current.y, e.clientX || e.touches[0].clientX, e.clientY || e.touches[0].clientY, current.color, current.lineWidth, current.type, true);
+                    draw(current.x, current.y, e.clientX || e.touches[0].clientX, e.clientY || e.touches[0].clientY, current.color, current.lineWidth, current.type, roomName, true);
                     break
                 }
                 case 1: {
-                    drawRect(current.x, current.y, Math.abs((e.clientX || e.touches[0].clientX) - current.x), Math.abs((e.clientY || e.touches[0].clientY) - current.y), current.color, current.lineWidth, current.type, true);
+                    drawRect(current.x, current.y, Math.abs((e.clientX || e.touches[0].clientX) - current.x), Math.abs((e.clientY || e.touches[0].clientY) - current.y), current.color, current.lineWidth, current.type, roomName, true);
                     break
                 }
                 case 2: {
-                    drawLine(current.x, current.y, e.clientX || e.touches[0].clientX, e.clientY || e.touches[0].clientY, current.color, current.lineWidth, current.type, true);
+                    drawLine(current.x, current.y, e.clientX || e.touches[0].clientX, e.clientY || e.touches[0].clientY, current.color, current.lineWidth, current.type, roomName, true);
                     break
                 }
                 case 3: {
-                    drawCircle(current.x, current.y, Math.abs((e.clientX || e.touches[0].clientX) - current.x), e.clientY || e.touches[0].clientY, current.color, current.lineWidth, current.type, true);
+                    drawCircle(current.x, current.y, e.clientX || e.touches[0].clientX, e.clientY || e.touches[0].clientY, current.color, current.lineWidth, current.type, roomName, true);
                     break
                 }
                 default: {
                     break
                 }
             }
-            socketRef.current.emit('updateCanvas', canvas.toDataURL());
+            socketRef.current.emit('updateCanvas', {roomName: roomName, data: canvas.toDataURL()});
         };
 
         // ----------- limit the number of events per second -----------------------
@@ -445,11 +452,12 @@ function Board() {
                 }
             }
         }
-        socketRef.current = io.connect('http://192.168.0.38:9700');
-        socketRef.current.emit('newConnect', idUser);
+        socketRef.current = io.connect('http://192.168.0.38:9700/whiteboard');
+        socketRef.current.emit('newConnect', {id: idUser, roomName: roomName});
         socketRef.current.on('drawing', onDrawingEvent);
 
         const onDrawingCanvasPre = (data) => {
+            // console.log(idUser);
             var img = new Image();
             img.src = data;
             // history.push(data);

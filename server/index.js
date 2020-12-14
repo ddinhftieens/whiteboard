@@ -9,49 +9,87 @@ const io = socket(server, {
     }
 });
 
-io.on('connection', onConnection);
+io.of('/whiteboard').on('connection', onConnection);
 
-var dataCanvas = null;
 var connectedUsers = {};
-var history = [];
+// var history = [];
+
+var _history = new Map();
 
 function onConnection(socket) {
     
+    // Updated drawing action
     socket.on('updateCanvas', (data) => {
-        dataCanvas = data;
-        history.push(data);
+        // var historyByRoom = history.find(element => element.key === data.roomName)
+        // if(historyByRoom === undefined || historyByRoom === null) history.push({key: data.roomName, array: [data.data]})
+        // else{
+        //     history.push(data.data);
+        // }
+        if(_history.has(data.roomName)){
+            var array = _history.get(data.roomName);
+            array.push(data.data);
+            _history.set(data.roomName, array)
+        }else{
+            var array = [];
+            array.push(data.data)
+            _history.set(data.roomName, array)
+        }
     });
-    socket.on('newConnect', (id) => {
-        const toUser = id;
-        socket.id = id;
-        connectedUsers[id] = socket;
+
+    // new connect
+    socket.on('newConnect', (data) => {
+        socket.join(data.roomName);
+        const toUser = data.id;
+        socket.id = data.id;
+        connectedUsers[data.id] = socket;
         if(connectedUsers.hasOwnProperty(toUser)){
+            let array = _history.get(data.roomName);
+            let dataCanvas = null;
+            if(array !== undefined && array !== null){
+                dataCanvas = array[array.length - 1];
+            }
+            // if(history.length > 0){
+            //     dataCanvas = history[history.length - 1];
+            // }
             connectedUsers[toUser].emit('newConnected', dataCanvas);
         }
     })
 
     socket.on('drawing', (data) => {
-        socket.broadcast.emit('drawing', data);
+        socket.join(data.roomName);
+        socket.broadcast.to(data.roomName).emit('drawing', data);
     });
 
-    // socket.on('drawImage', (data) => {
-    //     dataCanvas = data;
-    //     history.push(data);
-    //     socket.broadcast.emit('drawImage', dataCanvas);
-    // });
-
     socket.on('clearCanvas', (data) => {
-        dataCanvas = data;
-        history.push(data);
-        socket.broadcast.emit('clearCanvas', dataCanvas);
+        socket.join(data.roomName);
+        if(_history.has(data.roomName)){
+            var array = _history.get(data.roomName);
+            array.push(data.data);
+            _history.set(data.roomName, array)
+            socket.broadcast.to(data.roomName).emit('clearCanvas', null);
+        }else{
+            return;
+        }
+        // dataCanvas = data.data;
+        // history.push(data.data);
+        // let dataCanvas = history[history.length - 1]; 
     });
 
     socket.on('undoCavas', (data) => {
-        if(history.length > 0){
-            history.pop();
-            dataCanvas = history[history.length - 1];
-            socket.broadcast.emit('undoDrawing', dataCanvas);
+        socket.join(data.roomName);
+        if(_history.has(data.roomName)){
+            var array = _history.get(data.roomName);
+            array.pop();
+            let dataCanvas = array[array.length - 1];
+            socket.broadcast.to(data.roomName).emit('undoDrawing', dataCanvas);
+        }else{
+            return;
         }
+        // if(history.length > 0){
+        //     history.pop();
+        //     let dataCanvas = history[history.length - 1];
+        //     socket.broadcast.to(data.roomName).emit('undoDrawing', dataCanvas);
+        // }
     });
 }
 
